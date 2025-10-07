@@ -12,7 +12,7 @@
 
     <script>
         // State
-        let state = {
+        const state = {
             step: 0,
             name: '',
             controversy: null,
@@ -31,9 +31,9 @@
                 hook: 'Your feed is FULL of health claims. "This cured my acne!" But is any of it real science?',
                 question: 'Should you trust TikTok health advice?',
                 sources: [
-                    { name: 'TikTok Video', type: 'Social Media', trust: 1, why: 'No credentials, selling products' },
-                    { name: 'NIH Study', type: 'Government', trust: 5, why: 'Peer-reviewed, expert authors' },
-                    { name: 'Health Blog', type: 'Blog', trust: 2, why: 'No expertise listed' }
+                    { name: 'TikTok Video by @healthguru2024', type: 'Social Media', trust: 1, why: 'No credentials, selling supplements' },
+                    { name: 'NIH Nutrition Study (2024)', type: 'Government', trust: 5, why: 'Peer-reviewed, expert authors, large sample' },
+                    { name: 'Personal Health Blog', type: 'Blog', trust: 2, why: 'No expertise listed, sponsored content' }
                 ]
             },
             {
@@ -43,9 +43,9 @@
                 hook: 'Everyone argues about climate online. Some say hoax, some say doom. What does DATA show?',
                 question: 'Is human activity changing Earth\'s climate?',
                 sources: [
-                    { name: 'NOAA Data', type: 'Government', trust: 5, why: 'Primary data, transparent' },
-                    { name: 'Facebook Post', type: 'Social Media', trust: 1, why: 'No credentials, emotional' },
-                    { name: 'NASA Research', type: 'Government', trust: 5, why: 'Multiple data sources' }
+                    { name: 'NOAA Temperature Data', type: 'Government', trust: 5, why: 'Primary data, transparent methodology, long-term' },
+                    { name: 'Facebook Post: "It\'s Natural"', type: 'Social Media', trust: 1, why: 'No credentials, cherry-picked data, emotional' },
+                    { name: 'NASA Climate Research', type: 'Government', trust: 5, why: 'Multiple data sources, expert analysis' }
                 ]
             },
             {
@@ -55,9 +55,9 @@
                 hook: 'Parents say "no phones after 9pm" - is there actual science or are they being annoying?',
                 question: 'How do screens affect teen sleep?',
                 sources: [
-                    { name: 'Stanford Study', type: 'Academic', trust: 5, why: 'Peer-reviewed, large sample' },
-                    { name: 'Phone Company Blog', type: 'Corporate', trust: 2, why: 'Selling products, biased' },
-                    { name: 'Reddit Thread', type: 'Social Media', trust: 1, why: 'Anecdotal only' }
+                    { name: 'Stanford Sleep Lab Study', type: 'Academic', trust: 5, why: 'Peer-reviewed, 500+ participants, controlled' },
+                    { name: 'Phone Company Blog Post', type: 'Corporate', trust: 2, why: 'Selling products, obvious bias' },
+                    { name: 'Reddit: "Screens Don\'t Affect Me"', type: 'Social Media', trust: 1, why: 'Anecdotal, no expertise, selection bias' }
                 ]
             }
         ];
@@ -67,20 +67,20 @@
             evidence: 'I saw plants look healthier by windows.',
             reasoning: 'Plants need light so they grow better.',
             problems: [
-                'Claim too vague - what does "better" mean?',
-                'Evidence is just personal observation',
-                'No data or measurements',
-                'Reasoning just restates the claim'
+                'Claim is vague - what does "better" mean?',
+                'Evidence is just personal observation, not data',
+                'No measurements or specific numbers',
+                'Reasoning just restates the claim, doesn\'t explain WHY'
             ]
         };
 
         const goodExample = {
-            claim: 'Middle schoolers using screens within 1 hour of bedtime take 30-45 minutes longer to fall asleep.',
-            evidence: 'Stanford Sleep Lab tracked 500 students for 3 months. Phone users averaged 52 min to sleep, non-users 18 min. AAP reports blue light suppresses melatonin by 55%.',
-            reasoning: 'Blue light inhibits melatonin production in the pineal gland. Teen brains are especially sensitive during puberty. More screen time = more suppression = delayed sleep. This shows the biological mechanism causes the observable outcome.'
+            claim: 'Middle schoolers using screens within 1 hour of bedtime take 30-45 minutes longer to fall asleep than those who avoid screens.',
+            evidence: 'Stanford Sleep Lab tracked 500 students for 3 months with sleep monitors. Phone users averaged 52 minutes to fall asleep, non-users averaged 18 minutes. The American Academy of Pediatrics reports blue light suppresses melatonin production by 55% in teens.',
+            reasoning: 'Blue light from screens inhibits the pineal gland\'s production of melatonin, the hormone that signals sleep time. Teen brains are especially sensitive during puberty when circadian rhythms naturally shift later. The data shows a dose-response relationship: more screen time equals more melatonin suppression equals longer time to fall asleep. This demonstrates that the biological mechanism (blue light → melatonin suppression) directly causes the observable outcome (delayed sleep onset).'
         };
 
-        // Render
+        // Render - ONLY called when changing steps
         function render() {
             const steps = [
                 renderWelcome,
@@ -95,6 +95,7 @@
             ];
             
             document.getElementById('app').innerHTML = steps[state.step]();
+            window.scrollTo(0, 0);
         }
 
         function renderWelcome() {
@@ -136,6 +137,7 @@
                             type="text" 
                             id="nameInput"
                             placeholder="What's your name?"
+                            value="${state.name}"
                             class="w-full px-6 py-4 text-lg border-2 border-gray-300 rounded-xl mb-4 focus:border-purple-500 focus:outline-none"
                         />
                         
@@ -145,6 +147,8 @@
                         >
                             Let's Go 🚀
                         </button>
+                        
+                        <p class="text-center text-sm text-gray-500 mt-4">Takes about 30 minutes</p>
                     </div>
                 </div>
             `;
@@ -154,6 +158,8 @@
             return `
                 <div class="min-h-screen bg-gradient-to-br from-purple-100 to-pink-100 p-4 md:p-8">
                     <div class="max-w-6xl mx-auto">
+                        ${renderProgressBar()}
+                        
                         <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
                             <h2 class="text-3xl font-bold mb-2">Hey ${state.name}! Pick Your Controversy 🎯</h2>
                             <p class="text-gray-600">Choose something you actually care about</p>
@@ -161,10 +167,11 @@
                         
                         <div class="grid md:grid-cols-3 gap-6 mb-8">
                             ${controversies.map((c, i) => `
-                                <div onclick="pickControversy(${i})" class="bg-white rounded-2xl shadow-lg p-6 cursor-pointer hover:shadow-2xl transition-all ${state.controversy === i ? 'ring-4 ring-purple-500' : ''}">
+                                <div onclick="pickControversy(${i})" class="bg-white rounded-2xl shadow-lg p-6 cursor-pointer hover:shadow-2xl transition-all transform hover:scale-105 ${state.controversy === i ? 'ring-4 ring-purple-500' : ''}">
                                     <h3 class="text-2xl font-bold mb-2">${c.title}</h3>
                                     <p class="text-purple-600 font-semibold mb-3">${c.subtitle}</p>
-                                    <p class="text-gray-700">${c.hook}</p>
+                                    <p class="text-gray-700 text-sm">${c.hook}</p>
+                                    ${state.controversy === i ? '<div class="mt-4 text-center"><span class="bg-purple-600 text-white px-4 py-2 rounded-full text-sm font-bold">✓ Selected</span></div>' : ''}
                                 </div>
                             `).join('')}
                         </div>
@@ -173,7 +180,7 @@
                             <button 
                                 onclick="nextStep()"
                                 ${state.controversy === null ? 'disabled' : ''}
-                                class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl disabled:opacity-50"
+                                class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl shadow-lg hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Continue →
                             </button>
@@ -187,12 +194,15 @@
             return `
                 <div class="min-h-screen bg-gradient-to-br from-blue-100 to-purple-100 p-4 md:p-8">
                     <div class="max-w-4xl mx-auto">
+                        ${renderProgressBar()}
+                        
                         <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
                             <h2 class="text-3xl font-bold mb-2">🕵️ First: Spot the Bad Stuff</h2>
                             <p class="text-gray-600">Before you write yours, see what NOT to do</p>
                         </div>
                         
                         <div class="bg-red-50 border-4 border-red-300 rounded-2xl p-6 mb-6">
+                            <h3 class="text-red-900 font-bold mb-4 text-xl">❌ BAD Example:</h3>
                             <div class="mb-4">
                                 <span class="bg-red-200 text-red-900 px-3 py-1 rounded-full text-sm font-bold">CLAIM</span>
                                 <p class="mt-2 text-lg">${badExample.claim}</p>
@@ -208,16 +218,21 @@
                         </div>
                         
                         <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
-                            <h3 class="text-xl font-bold mb-4">What's Wrong? 🤔</h3>
-                            ${badExample.problems.map(p => `
-                                <div class="bg-gray-100 p-4 rounded-lg mb-2">
-                                    <p>❌ ${p}</p>
-                                </div>
-                            `).join('')}
+                            <h3 class="text-xl font-bold mb-4">What's Wrong Here? 🤔</h3>
+                            <div class="space-y-3">
+                                ${badExample.problems.map(p => `
+                                    <div class="bg-gray-100 p-4 rounded-lg">
+                                        <p class="text-gray-800">❌ ${p}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="mt-4 bg-red-100 p-4 rounded-lg">
+                                <p class="font-bold text-red-900">Score: 2/12 (Emerging Level)</p>
+                            </div>
                         </div>
                         
                         <div class="bg-green-50 border-4 border-green-300 rounded-2xl p-6 mb-6">
-                            <h3 class="text-xl font-bold text-green-900 mb-4">✨ Now a GOOD Example:</h3>
+                            <h3 class="text-xl font-bold text-green-900 mb-4">✨ Now Look at a GOOD Example:</h3>
                             <div class="mb-4">
                                 <span class="bg-green-200 text-green-900 px-3 py-1 rounded-full text-sm font-bold">CLAIM</span>
                                 <p class="mt-2 text-lg">${goodExample.claim}</p>
@@ -226,14 +241,18 @@
                                 <span class="bg-green-200 text-green-900 px-3 py-1 rounded-full text-sm font-bold">EVIDENCE</span>
                                 <p class="mt-2 text-lg">${goodExample.evidence}</p>
                             </div>
-                            <div>
+                            <div class="mb-4">
                                 <span class="bg-green-200 text-green-900 px-3 py-1 rounded-full text-sm font-bold">REASONING</span>
                                 <p class="mt-2 text-lg">${goodExample.reasoning}</p>
+                            </div>
+                            <div class="mt-4 bg-green-100 p-4 rounded-lg">
+                                <p class="font-bold text-green-900">Score: 11/12 (Advanced Level) ⭐</p>
+                                <p class="text-sm text-green-800 mt-2">Notice: Specific numbers, credible sources, explains the science!</p>
                             </div>
                         </div>
                         
                         <div class="text-center">
-                            <button onclick="nextStep()" class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl">
+                            <button onclick="nextStep()" class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl shadow-lg hover:bg-purple-700 transition-all">
                                 Got It, Let's Build Mine →
                             </button>
                         </div>
@@ -247,29 +266,51 @@
             return `
                 <div class="min-h-screen bg-gradient-to-br from-yellow-100 to-orange-100 p-4 md:p-8">
                     <div class="max-w-5xl mx-auto">
+                        ${renderProgressBar()}
+                        
                         <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
                             <h2 class="text-3xl font-bold mb-2">🔍 SIFT: Spot the Fake Stuff</h2>
                             <p class="text-gray-600 mb-4">Rate these sources - which can you trust?</p>
-                            <p class="font-bold text-purple-900">Question: ${c.question}</p>
+                            <div class="bg-purple-50 p-4 rounded-lg">
+                                <p class="font-bold text-purple-900">Research Question: ${c.question}</p>
+                            </div>
                         </div>
                         
-                        <div class="grid md:grid-cols-4 gap-4 mb-8">
-                            <div class="bg-red-50 p-4 rounded-xl"><strong>🛑 STOP</strong><br/><span class="text-sm">Don't trust yet</span></div>
-                            <div class="bg-blue-50 p-4 rounded-xl"><strong>🔎 INVESTIGATE</strong><br/><span class="text-sm">Who made this?</span></div>
-                            <div class="bg-green-50 p-4 rounded-xl"><strong>📚 FIND BETTER</strong><br/><span class="text-sm">Better sources?</span></div>
-                            <div class="bg-purple-50 p-4 rounded-xl"><strong>🔗 TRACE</strong><br/><span class="text-sm">Find original</span></div>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+                            <div class="bg-red-50 p-4 rounded-xl text-center">
+                                <div class="text-2xl mb-1">🛑</div>
+                                <strong class="text-sm">STOP</strong>
+                                <p class="text-xs text-gray-600">Don't trust yet</p>
+                            </div>
+                            <div class="bg-blue-50 p-4 rounded-xl text-center">
+                                <div class="text-2xl mb-1">🔎</div>
+                                <strong class="text-sm">INVESTIGATE</strong>
+                                <p class="text-xs text-gray-600">Who made this?</p>
+                            </div>
+                            <div class="bg-green-50 p-4 rounded-xl text-center">
+                                <div class="text-2xl mb-1">📚</div>
+                                <strong class="text-sm">FIND BETTER</strong>
+                                <p class="text-xs text-gray-600">Better sources?</p>
+                            </div>
+                            <div class="bg-purple-50 p-4 rounded-xl text-center">
+                                <div class="text-2xl mb-1">🔗</div>
+                                <strong class="text-sm">TRACE</strong>
+                                <p class="text-xs text-gray-600">Find original</p>
+                            </div>
                         </div>
                         
                         ${c.sources.map((s, i) => `
                             <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
                                 <h3 class="text-xl font-bold mb-2">${s.name}</h3>
-                                <p class="text-sm text-gray-600 mb-3">Type: ${s.type}</p>
-                                <p class="mb-4">${s.why}</p>
-                                <select onchange="rateSift(${i}, this.value)" class="w-full p-3 border-2 rounded-lg">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <span class="text-sm px-3 py-1 rounded-full ${s.trust >= 4 ? 'bg-green-100 text-green-800' : s.trust >= 3 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}">${s.type}</span>
+                                </div>
+                                <p class="text-gray-700 mb-4">${s.why}</p>
+                                <select onchange="rateSift(${i}, this.value)" class="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
                                     <option value="">Rate this source...</option>
-                                    <option value="5">⭐⭐⭐⭐⭐ Highly Trustworthy</option>
-                                    <option value="3">⭐⭐⭐ Use with Caution</option>
-                                    <option value="1">⭐ Don't Use This</option>
+                                    <option value="5" ${state.sift[i] === '5' ? 'selected' : ''}>⭐⭐⭐⭐⭐ Highly Trustworthy - Use This!</option>
+                                    <option value="3" ${state.sift[i] === '3' ? 'selected' : ''}>⭐⭐⭐ Okay - Use with Caution</option>
+                                    <option value="1" ${state.sift[i] === '1' ? 'selected' : ''}>⭐ Sketchy - Don't Use</option>
                                 </select>
                             </div>
                         `).join('')}
@@ -278,7 +319,7 @@
                             <button 
                                 onclick="nextStep()"
                                 ${Object.keys(state.sift).length < 3 ? 'disabled' : ''}
-                                class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl disabled:opacity-50"
+                                class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl shadow-lg hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Continue →
                             </button>
@@ -293,45 +334,51 @@
             return `
                 <div class="min-h-screen bg-gradient-to-br from-blue-100 to-purple-100 p-4 md:p-8">
                     <div class="max-w-4xl mx-auto">
+                        ${renderProgressBar()}
+                        
                         <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
                             <h2 class="text-3xl font-bold mb-2">💡 Build Your Claim</h2>
                             <p class="text-gray-600">Answer the question specifically and clearly</p>
                         </div>
                         
                         <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg mb-6">
-                            <p class="font-bold">Research Question:</p>
-                            <p>${c.question}</p>
+                            <p class="font-bold text-blue-900">Research Question:</p>
+                            <p class="text-blue-800">${c.question}</p>
                         </div>
                         
                         <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
                             <h3 class="font-bold mb-3">✅ Good Claim Checklist:</h3>
-                            <div class="space-y-2">
+                            <div class="space-y-2 text-gray-700">
                                 <p>✓ Directly answers the question</p>
-                                <p>✓ Specific (numbers, names, details)</p>
-                                <p>✓ Can prove with evidence</p>
-                                <p>✓ Sounds confident</p>
+                                <p>✓ Specific (includes numbers, names, or details)</p>
+                                <p>✓ Can be proven with evidence</p>
+                                <p>✓ Sounds confident, not wishy-washy</p>
                             </div>
                         </div>
                         
                         <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-                            <label class="block font-bold mb-3">Write Your Claim:</label>
+                            <label class="block font-bold mb-3 text-lg">Write Your Claim:</label>
                             <textarea 
                                 id="claimInput"
                                 rows="4"
-                                placeholder="Example: TikTok health advice should not be trusted because..."
-                                class="w-full p-4 border-2 rounded-lg"
-                                oninput="updateClaim()"
+                                placeholder="Example: TikTok health advice should not be trusted without verification because most content creators lack medical credentials and their claims are not peer-reviewed..."
+                                class="w-full p-4 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
                             >${state.claim}</textarea>
-                            <p class="text-sm text-gray-600 mt-2">${state.claim.length} characters ${state.claim.length > 50 ? '✓' : '- keep going!'}</p>
+                            <div class="mt-3 flex items-center justify-between">
+                                <p class="text-sm text-gray-600">${state.claim.length} characters</p>
+                                <p class="text-sm font-semibold ${state.claim.length >= 50 ? 'text-green-600' : 'text-orange-600'}">
+                                    ${state.claim.length >= 50 ? '✓ Good length!' : 'Keep going - be more specific!'}
+                                </p>
+                            </div>
                         </div>
                         
                         <div class="text-center">
                             <button 
-                                onclick="nextStep()"
+                                onclick="saveClaim()"
                                 ${state.claim.length < 50 ? 'disabled' : ''}
-                                class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl disabled:opacity-50"
+                                class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl shadow-lg hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Continue →
+                                Save & Continue →
                             </button>
                         </div>
                     </div>
@@ -343,36 +390,43 @@
             return `
                 <div class="min-h-screen bg-gradient-to-br from-green-100 to-blue-100 p-4 md:p-8">
                     <div class="max-w-4xl mx-auto">
+                        ${renderProgressBar()}
+                        
                         <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
                             <h2 class="text-3xl font-bold mb-2">📊 Gather Evidence</h2>
-                            <p class="text-gray-600">Use data from trusted sources</p>
+                            <p class="text-gray-600">Use data from trusted sources - be specific!</p>
                         </div>
                         
                         <div class="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-lg mb-6">
-                            <p class="font-bold">Your Claim:</p>
-                            <p>${state.claim}</p>
+                            <p class="font-bold text-purple-900">Your Claim:</p>
+                            <p class="text-purple-800">${state.claim}</p>
+                        </div>
+                        
+                        <div class="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 mb-6">
+                            <p class="font-bold text-yellow-900 mb-2">💡 Pro Tip:</p>
+                            <p class="text-yellow-800 text-sm">Include numbers, study names, specific findings. "A study showed..." is weak. "Stanford's 2023 study of 500 teens found..." is strong!</p>
                         </div>
                         
                         ${[0, 1, 2].map(i => `
                             <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
-                                <label class="block font-bold mb-3">Evidence #${i + 1} ${i === 0 ? '(Required)' : '(Optional)'}</label>
+                                <label class="block font-bold mb-3">Evidence Piece #${i + 1} ${i === 0 ? '<span class="text-red-600">(Required)</span>' : '<span class="text-gray-500">(Optional)</span>'}</label>
                                 <textarea 
                                     id="ev${i}"
                                     rows="3"
-                                    placeholder="According to [source], [specific data]..."
-                                    class="w-full p-4 border-2 rounded-lg"
-                                    oninput="updateEvidence(${i})"
+                                    placeholder="${i === 0 ? 'According to [source name], [specific finding with numbers]...' : 'Add more evidence to strengthen your argument...'}"
+                                    class="w-full p-4 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"
                                 >${state.evidence[i]}</textarea>
+                                <p class="text-sm text-gray-600 mt-2">${state.evidence[i].length} characters</p>
                             </div>
                         `).join('')}
                         
                         <div class="text-center">
                             <button 
-                                onclick="nextStep()"
+                                onclick="saveEvidence()"
                                 ${state.evidence[0].length < 30 ? 'disabled' : ''}
-                                class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl disabled:opacity-50"
+                                class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl shadow-lg hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Continue →
+                                Save & Continue →
                             </button>
                         </div>
                     </div>
@@ -384,35 +438,61 @@
             return `
                 <div class="min-h-screen bg-gradient-to-br from-orange-100 to-pink-100 p-4 md:p-8">
                     <div class="max-w-4xl mx-auto">
+                        ${renderProgressBar()}
+                        
                         <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
                             <h2 class="text-3xl font-bold mb-2">🧠 Explain Your Reasoning</h2>
-                            <p class="text-gray-600">WHY does your evidence prove your claim?</p>
+                            <p class="text-gray-600">WHY does your evidence prove your claim? Explain the science!</p>
                         </div>
                         
                         <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-                            <p class="font-bold mb-2">Your Claim:</p>
-                            <p class="mb-4">${state.claim}</p>
-                            <p class="font-bold mb-2">Your Evidence:</p>
-                            ${state.evidence.filter(e => e).map(e => `<p class="mb-2">• ${e}</p>`).join('')}
+                            <div class="mb-4">
+                                <span class="bg-blue-100 text-blue-900 px-3 py-1 rounded-full text-sm font-bold">YOUR CLAIM</span>
+                                <p class="mt-2 text-gray-800">${state.claim}</p>
+                            </div>
+                            <div>
+                                <span class="bg-green-100 text-green-900 px-3 py-1 rounded-full text-sm font-bold">YOUR EVIDENCE</span>
+                                ${state.evidence.filter(e => e).map(e => `<p class="mt-2 text-gray-800">• ${e}</p>`).join('')}
+                            </div>
                         </div>
                         
                         <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
-                            <label class="block font-bold mb-3">Write Your Reasoning:</label>
+                            <h3 class="font-bold mb-3">Good Reasoning Should:</h3>
+                            <div class="space-y-2 text-gray-700">
+                                <p>✓ Explain HOW the evidence supports the claim</p>
+                                <p>✓ Use scientific principles or concepts</p>
+                                <p>✓ Show the logical connection step-by-step</p>
+                                <p>✓ Answer "So what? Why does this matter?"</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-yellow-50 border-2 border-yellow-400 rounded-lg p-4 mb-6">
+                            <p class="font-bold text-yellow-900 mb-2">🚫 DON'T Just Restate!</p>
+                            <p class="text-yellow-800 text-sm mb-2">Bad: "The evidence shows my claim is true."</p>
+                            <p class="text-yellow-800 text-sm font-semibold">Good: "This happens because [scientific mechanism]... When [condition], it causes [effect]..."</p>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                            <label class="block font-bold mb-3 text-lg">Write Your Reasoning:</label>
                             <textarea 
                                 id="reasoningInput"
                                 rows="6"
-                                placeholder="This evidence supports my claim because... When [X] happens, it causes [Y]..."
-                                class="w-full p-4 border-2 rounded-lg"
-                                oninput="updateReasoning()"
+                                placeholder="This evidence supports my claim because... [explain the mechanism or principle]... When [X happens], it causes [Y]... This demonstrates that..."
+                                class="w-full p-4 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none text-lg"
                             >${state.reasoning}</textarea>
-                            <p class="text-sm text-gray-600 mt-2">${state.reasoning.length} characters ${state.reasoning.length > 100 ? '✓' : '- explain the science!'}</p>
+                            <div class="mt-3 flex items-center justify-between">
+                                <p class="text-sm text-gray-600">${state.reasoning.length} characters</p>
+                                <p class="text-sm font-semibold ${state.reasoning.length >= 100 ? 'text-green-600' : 'text-orange-600'}">
+                                    ${state.reasoning.length >= 100 ? '✓ Great depth!' : 'Keep going - explain the science!'}
+                                </p>
+                            </div>
                         </div>
                         
                         <div class="text-center">
                             <button 
-                                onclick="nextStep()"
+                                onclick="saveReasoning()"
                                 ${state.reasoning.length < 100 ? 'disabled' : ''}
-                                class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl disabled:opacity-50"
+                                class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl shadow-lg hover:bg-purple-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Review My CER →
                             </button>
@@ -424,40 +504,79 @@
 
         function renderReview() {
             const score = calcScore();
+            const c = controversies[state.controversy];
             return `
                 <div class="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4 md:p-8">
                     <div class="max-w-4xl mx-auto">
+                        ${renderProgressBar()}
+                        
                         <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
-                            <h2 class="text-3xl font-bold mb-2">🎯 Your Complete CER</h2>
-                            <p class="text-gray-600">Review before submitting</p>
+                            <h2 class="text-3xl font-bold mb-2">🎯 Your Complete CER Statement</h2>
+                            <p class="text-gray-600">Review everything before submitting</p>
+                        </div>
+                        
+                        <div class="bg-purple-50 border-l-4 border-purple-600 p-4 rounded-lg mb-6">
+                            <p class="font-semibold text-purple-900">Research Question:</p>
+                            <p class="text-purple-800">${c.question}</p>
                         </div>
                         
                         <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
-                            <div class="mb-6 pb-6 border-b-2">
-                                <span class="bg-blue-200 text-blue-900 px-3 py-1 rounded-full text-sm font-bold">CLAIM</span>
-                                <p class="mt-3">${state.claim}</p>
+                            <div class="mb-6 pb-6 border-b-2 border-gray-200">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="bg-blue-200 text-blue-900 px-4 py-2 rounded-full font-bold">CLAIM</span>
+                                    <button onclick="goToStep(4)" class="text-sm text-blue-600 hover:underline">Edit</button>
+                                </div>
+                                <p class="text-lg text-gray-800">${state.claim}</p>
                             </div>
-                            <div class="mb-6 pb-6 border-b-2">
-                                <span class="bg-green-200 text-green-900 px-3 py-1 rounded-full text-sm font-bold">EVIDENCE</span>
-                                ${state.evidence.filter(e => e).map(e => `<p class="mt-3">• ${e}</p>`).join('')}
+                            <div class="mb-6 pb-6 border-b-2 border-gray-200">
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="bg-green-200 text-green-900 px-4 py-2 rounded-full font-bold">EVIDENCE</span>
+                                    <button onclick="goToStep(5)" class="text-sm text-green-600 hover:underline">Edit</button>
+                                </div>
+                                ${state.evidence.filter(e => e).map(e => `<p class="text-lg text-gray-800 mb-3">• ${e}</p>`).join('')}
                             </div>
                             <div>
-                                <span class="bg-orange-200 text-orange-900 px-3 py-1 rounded-full text-sm font-bold">REASONING</span>
-                                <p class="mt-3">${state.reasoning}</p>
+                                <div class="flex items-center justify-between mb-3">
+                                    <span class="bg-orange-200 text-orange-900 px-4 py-2 rounded-full font-bold">REASONING</span>
+                                    <button onclick="goToStep(6)" class="text-sm text-orange-600 hover:underline">Edit</button>
+                                </div>
+                                <p class="text-lg text-gray-800">${state.reasoning}</p>
                             </div>
                         </div>
                         
                         <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
-                            <h3 class="font-bold text-xl mb-4">Score: ${score}/12</h3>
-                            <div class="${score >= 9 ? 'bg-green-100' : score >= 6 ? 'bg-yellow-100' : 'bg-red-100'} p-4 rounded-lg">
-                                <p class="font-bold">${score >= 9 ? '🌟 Advanced!' : score >= 6 ? '✓ Proficient' : '⚠️ Needs Work'}</p>
-                                <p class="text-sm mt-2">${score >= 9 ? 'Excellent work!' : score >= 6 ? 'Good job! Could be stronger.' : 'Try being more specific.'}</p>
+                            <h3 class="font-bold text-2xl mb-4">Your Score: ${score.total}/12</h3>
+                            <div class="grid md:grid-cols-3 gap-4 mb-4">
+                                <div class="bg-blue-50 p-4 rounded-lg text-center">
+                                    <p class="font-semibold text-blue-900">Claim</p>
+                                    <p class="text-3xl font-bold text-blue-600">${score.claim}/4</p>
+                                </div>
+                                <div class="bg-green-50 p-4 rounded-lg text-center">
+                                    <p class="font-semibold text-green-900">Evidence</p>
+                                    <p class="text-3xl font-bold text-green-600">${score.evidence}/4</p>
+                                </div>
+                                <div class="bg-orange-50 p-4 rounded-lg text-center">
+                                    <p class="font-semibold text-orange-900">Reasoning</p>
+                                    <p class="text-3xl font-bold text-orange-600">${score.reasoning}/4</p>
+                                </div>
+                            </div>
+                            <div class="${score.total >= 9 ? 'bg-green-100 border-green-500' : score.total >= 6 ? 'bg-yellow-100 border-yellow-500' : 'bg-red-100 border-red-500'} border-l-4 p-4 rounded-lg">
+                                <p class="font-bold text-xl ${score.total >= 9 ? 'text-green-900' : score.total >= 6 ? 'text-yellow-900' : 'text-red-900'}">
+                                    ${score.level}
+                                </p>
+                                <p class="text-sm ${score.total >= 9 ? 'text-green-800' : score.total >= 6 ? 'text-yellow-800' : 'text-red-800'} mt-2">
+                                    ${score.feedback}
+                                </p>
                             </div>
                         </div>
                         
                         <div class="grid md:grid-cols-2 gap-4">
-                            <button onclick="state.step = 4; render();" class="bg-gray-600 text-white font-bold py-4 rounded-xl">← Revise</button>
-                            <button onclick="nextStep()" class="bg-purple-600 text-white font-bold py-4 rounded-xl">Submit →</button>
+                            <button onclick="goToStep(4)" class="bg-gray-600 text-white font-bold text-lg py-4 px-8 rounded-xl shadow-lg hover:bg-gray-700 transition-all">
+                                ← Revise My Work
+                            </button>
+                            <button onclick="nextStep()" class="bg-purple-600 text-white font-bold text-lg py-4 px-8 rounded-xl shadow-lg hover:bg-purple-700 transition-all">
+                                I'm Happy With This →
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -465,39 +584,69 @@
         }
 
         function renderDone() {
+            const score = calcScore();
             return `
                 <div class="min-h-screen bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center p-4">
                     <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full p-8">
                         <div class="text-center mb-8">
                             <div class="text-6xl mb-4">🎉</div>
-                            <h1 class="text-4xl font-bold mb-2">You Did It!</h1>
+                            <h1 class="text-4xl font-bold mb-2">You Did It, ${state.name}!</h1>
                             <p class="text-xl text-gray-600">CER Detective Academy Complete</p>
                         </div>
                         
                         <div class="bg-green-100 border-2 border-green-500 rounded-xl p-6 mb-6">
-                            <h3 class="font-bold text-green-900 mb-3">Skills Unlocked:</h3>
-                            <p>✓ Spot unreliable sources</p>
-                            <p>✓ Build scientific arguments</p>
-                            <p>✓ Explain reasoning</p>
-                            <p>✓ Think critically</p>
+                            <h3 class="font-bold text-green-900 text-xl mb-3">Skills Unlocked:</h3>
+                            <div class="space-y-2 text-green-800">
+                                <p>✓ Spot unreliable sources using SIFT</p>
+                                <p>✓ Build scientific arguments with evidence</p>
+                                <p>✓ Explain reasoning like a researcher</p>
+                                <p>✓ Think critically about online claims</p>
+                            </div>
                         </div>
                         
-                        <button onclick="downloadPDF()" class="w-full bg-green-600 text-white font-bold text-xl py-4 rounded-xl mb-4">
-                            📄 Download Certificate
-                        </button>
+                        <div class="bg-purple-100 border-2 border-purple-500 rounded-xl p-6 mb-6">
+                            <h3 class="font-bold text-purple-900 text-xl mb-2">Your Final Score</h3>
+                            <p class="text-3xl font-bold text-purple-600 mb-2">${score.total}/12 - ${score.level}</p>
+                            <p class="text-sm text-purple-800">${score.feedback}</p>
+                        </div>
                         
-                        <a href="YOUR_QUIZ_URL" target="_blank" class="block w-full bg-purple-600 text-white font-bold text-xl py-4 rounded-xl text-center">
-                            📝 Take Quiz
-                        </a>
+                        <div class="space-y-4 mb-6">
+                            <button onclick="downloadPDF()" class="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold text-xl py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all">
+                                📄 Download My Certificate
+                            </button>
+                            
+                            <a href="YOUR_QUIZ_URL_HERE" target="_blank" class="block w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-xl py-4 px-8 rounded-xl shadow-lg hover:shadow-xl transition-all text-center">
+                                📝 Take Knowledge Check Quiz
+                            </a>
+                        </div>
+                        
+                        <div class="text-center text-gray-600 text-sm">
+                            <p>Ready to use these skills in real life!</p>
+                        </div>
                     </div>
                 </div>
             `;
         }
 
-        // Functions
+        function renderProgressBar() {
+            const progress = ((state.step + 1) / 9) * 100;
+            return `
+                <div class="bg-white rounded-xl shadow-lg p-4 mb-6">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-semibold text-gray-600">Progress</span>
+                        <span class="text-sm font-bold text-purple-600">${Math.round(progress)}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3">
+                        <div class="bg-gradient-to-r from-purple-600 to-pink-600 h-3 rounded-full transition-all duration-500" style="width: ${progress}%"></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Functions that DON'T trigger re-render
         function startApp() {
             const name = document.getElementById('nameInput').value.trim();
-            if (!name) { alert('Enter your name!'); return; }
+            if (!name) { alert('Please enter your name!'); return; }
             state.name = name;
             nextStep();
         }
@@ -505,7 +654,11 @@
         function nextStep() {
             state.step++;
             render();
-            window.scrollTo(0, 0);
+        }
+
+        function goToStep(step) {
+            state.step = step;
+            render();
         }
 
         function pickControversy(i) {
@@ -515,76 +668,135 @@
 
         function rateSift(i, val) {
             state.sift[i] = val;
-            render();
+            // Don't re-render, just update state
         }
 
-        function updateClaim() {
-            state.claim = document.getElementById('claimInput').value;
-            render();
+        // Save functions - only called on button click
+        function saveClaim() {
+            state.claim = document.getElementById('claimInput').value.trim();
+            nextStep();
         }
 
-        function updateEvidence(i) {
-            state.evidence[i] = document.getElementById('ev' + i).value;
+        function saveEvidence() {
+            state.evidence[0] = document.getElementById('ev0').value.trim();
+            state.evidence[1] = document.getElementById('ev1').value.trim();
+            state.evidence[2] = document.getElementById('ev2').value.trim();
+            nextStep();
         }
 
-        function updateReasoning() {
-            state.reasoning = document.getElementById('reasoningInput').value;
-            render();
+        function saveReasoning() {
+            state.reasoning = document.getElementById('reasoningInput').value.trim();
+            nextStep();
         }
 
         function calcScore() {
-            let score = 0;
-            if (state.claim.length > 100) score += 4;
-            else if (state.claim.length > 50) score += 3;
-            else score += 2;
+            let claimScore = 0;
+            if (state.claim.length > 100) claimScore = 4;
+            else if (state.claim.length > 50) claimScore = 3;
+            else if (state.claim.length > 20) claimScore = 2;
+            else claimScore = 1;
             
-            const evCount = state.evidence.filter(e => e.length > 30).length;
-            score += evCount >= 2 ? 4 : evCount >= 1 ? 3 : 2;
+            const evidenceCount = state.evidence.filter(e => e.length > 30).length;
+            let evidenceScore = 0;
+            if (evidenceCount >= 3) evidenceScore = 4;
+            else if (evidenceCount >= 2) evidenceScore = 3;
+            else if (evidenceCount >= 1) evidenceScore = 2;
+            else evidenceScore = 1;
             
-            if (state.reasoning.length > 150) score += 4;
-            else if (state.reasoning.length > 100) score += 3;
-            else score += 2;
+            let reasoningScore = 0;
+            if (state.reasoning.length > 150) reasoningScore = 4;
+            else if (state.reasoning.length > 100) reasoningScore = 3;
+            else if (state.reasoning.length > 50) reasoningScore = 2;
+            else reasoningScore = 1;
             
-            return score;
+            const total = claimScore + evidenceScore + reasoningScore;
+            
+            let level, feedback;
+            if (total >= 10) {
+                level = 'Advanced Level 🌟';
+                feedback = 'Excellent work! Your CER statement is thorough, specific, and well-reasoned.';
+            } else if (total >= 7) {
+                level = 'Proficient Level ✓';
+                feedback = 'Good job! You understand CER well. A few tweaks could make this even stronger.';
+            } else if (total >= 4) {
+                level = 'Developing Level';
+                feedback = 'You\'re on the right track. Try being more specific and adding more detail.';
+            } else {
+                level = 'Emerging Level';
+                feedback = 'Keep working! Make your claim more specific, add data to evidence, explain the science more.';
+            }
+            
+            return { claim: claimScore, evidence: evidenceScore, reasoning: reasoningScore, total, level, feedback };
         }
 
         function downloadPDF() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
+            const score = calcScore();
+            const c = controversies[state.controversy];
             
+            // Header
             doc.setFillColor(102, 126, 234);
             doc.rect(0, 0, 210, 40, 'F');
             doc.setTextColor(255, 255, 255);
             doc.setFontSize(24);
+            doc.setFont(undefined, 'bold');
             doc.text('CER DETECTIVE ACADEMY', 105, 20, { align: 'center' });
             doc.setFontSize(14);
             doc.text('Certificate of Completion', 105, 30, { align: 'center' });
             
+            // Student
             doc.setTextColor(0, 0, 0);
-            doc.setFontSize(16);
+            doc.setFontSize(18);
             doc.text(state.name, 105, 55, { align: 'center' });
-            
             doc.setFontSize(11);
-            doc.text('CLAIM:', 20, 75);
-            const claim = doc.splitTextToSize(state.claim, 170);
-            doc.text(claim, 20, 82);
+            doc.text(`Completed: ${new Date().toLocaleDateString()}`, 105, 63, { align: 'center' });
             
-            let y = 82 + (claim.length * 6) + 10;
+            // Question
+            doc.setFont(undefined, 'bold');
+            doc.text('RESEARCH QUESTION:', 20, 75);
+            doc.setFont(undefined, 'normal');
+            const question = doc.splitTextToSize(c.question, 170);
+            doc.text(question, 20, 82);
+            
+            // Claim
+            let y = 82 + (question.length * 6) + 10;
+            doc.setFont(undefined, 'bold');
+            doc.text('CLAIM:', 20, y);
+            doc.setFont(undefined, 'normal');
+            const claim = doc.splitTextToSize(state.claim, 170);
+            doc.text(claim, 20, y + 7);
+            
+            // Evidence
+            y = y + 7 + (claim.length * 6) + 10;
+            doc.setFont(undefined, 'bold');
             doc.text('EVIDENCE:', 20, y);
+            doc.setFont(undefined, 'normal');
             state.evidence.filter(e => e).forEach((ev, i) => {
                 const evText = doc.splitTextToSize(`${i + 1}. ${ev}`, 170);
                 doc.text(evText, 20, y + 7 + (i * 20));
                 y += evText.length * 6 + 20;
             });
             
+            // Reasoning
             if (y > 240) { doc.addPage(); y = 20; }
+            doc.setFont(undefined, 'bold');
             doc.text('REASONING:', 20, y);
+            doc.setFont(undefined, 'normal');
             const reasoning = doc.splitTextToSize(state.reasoning, 170);
             doc.text(reasoning, 20, y + 7);
             
+            // Score
             y = y + 7 + (reasoning.length * 6) + 10;
             if (y > 250) { doc.addPage(); y = 20; }
-            doc.text(`Score: ${calcScore()}/12`, 20, y);
+            doc.setFillColor(240, 240, 240);
+            doc.rect(15, y, 180, 20, 'F');
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(14);
+            doc.text(`Score: ${score.total}/12 - ${score.level}`, 20, y + 8);
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'normal');
+            doc.text(score.feedback, 20, y + 15);
             
             doc.save(`${state.name.replace(/\s+/g, '_')}_CER_Certificate.pdf`);
         }
