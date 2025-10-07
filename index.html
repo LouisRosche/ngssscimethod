@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CER Detective Academy 🔍</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div id="app"></div>
+
+    <script>
+        // State
+        let state = {
+            step: 0,
+            name: '',
+            controversy: null,
+            sift: {},
+            claim: '',
+            evidence: ['', '', ''],
+            reasoning: ''
+        };
+
+        // Data
+        const controversies = [
+            {
+                id: 'tiktok',
+                title: '💊 TikTok Health Trends',
+                subtitle: 'Are viral health hacks legit or cap?',
+                hook: 'Your feed is FULL of health claims. "This cured my acne!" But is any of it real science?',
+                question: 'Should you trust TikTok health advice?',
+                sources: [
+                    { name: 'TikTok Video', type: 'Social Media', trust: 1, why: 'No credentials, selling products' },
+                    { name: 'NIH Study', type: 'Government', trust: 5, why: 'Peer-reviewed, expert authors' },
+                    { name: 'Health Blog', type: 'Blog', trust: 2, why: 'No expertise listed' }
+                ]
+            },
+            {
+                id: 'climate',
+                title: '🌍 Climate Change',
+                subtitle: 'What does science actually say?',
+                hook: 'Everyone argues about climate online. Some say hoax, some say doom. What does DATA show?',
+                question: 'Is human activity changing Earth\'s climate?',
+                sources: [
+                    { name: 'NOAA Data', type: 'Government', trust: 5, why: 'Primary data, transparent' },
+                    { name: 'Facebook Post', type: 'Social Media', trust: 1, why: 'No credentials, emotional' },
+                    { name: 'NASA Research', type: 'Government', trust: 5, why: 'Multiple data sources' }
+                ]
+            },
+            {
+                id: 'phones',
+                title: '📱 Phones & Sleep',
+                subtitle: 'Do screens really mess up sleep?',
+                hook: 'Parents say "no phones after 9pm" - is there actual science or are they being annoying?',
+                question: 'How do screens affect teen sleep?',
+                sources: [
+                    { name: 'Stanford Study', type: 'Academic', trust: 5, why: 'Peer-reviewed, large sample' },
+                    { name: 'Phone Company Blog', type: 'Corporate', trust: 2, why: 'Selling products, biased' },
+                    { name: 'Reddit Thread', type: 'Social Media', trust: 1, why: 'Anecdotal only' }
+                ]
+            }
+        ];
+
+        const badExample = {
+            claim: 'Plants are better near windows.',
+            evidence: 'I saw plants look healthier by windows.',
+            reasoning: 'Plants need light so they grow better.',
+            problems: [
+                'Claim too vague - what does "better" mean?',
+                'Evidence is just personal observation',
+                'No data or measurements',
+                'Reasoning just restates the claim'
+            ]
+        };
+
+        const goodExample = {
+            claim: 'Middle schoolers using screens within 1 hour of bedtime take 30-45 minutes longer to fall asleep.',
+            evidence: 'Stanford Sleep Lab tracked 500 students for 3 months. Phone users averaged 52 min to sleep, non-users 18 min. AAP reports blue light suppresses melatonin by 55%.',
+            reasoning: 'Blue light inhibits melatonin production in the pineal gland. Teen brains are especially sensitive during puberty. More screen time = more suppression = delayed sleep. This shows the biological mechanism causes the observable outcome.'
+        };
+
+        // Render
+        function render() {
+            const steps = [
+                renderWelcome,
+                renderPick,
+                renderBadExample,
+                renderSift,
+                renderClaim,
+                renderEvidence,
+                renderReasoning,
+                renderReview,
+                renderDone
+            ];
+            
+            document.getElementById('app').innerHTML = steps[state.step]();
+        }
+
+        function renderWelcome() {
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full p-8 md:p-12">
+                        <div class="text-center mb-8">
+                            <div class="text-6xl mb-4">🔍</div>
+                            <h1 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">CER Detective Academy</h1>
+                            <p class="text-xl text-gray-600">Learn to spot BS and prove your point like a scientist</p>
+                        </div>
+                        
+                        <div class="bg-purple-100 border-l-4 border-purple-500 p-6 rounded-lg mb-8">
+                            <p class="text-purple-900 mb-3">
+                                <strong>Real Talk:</strong> Your feed is FULL of claims - health trends, debates, "life hacks" that might hurt you.
+                            </p>
+                            <p class="text-purple-900 font-bold">How do you know what's actually real?</p>
+                        </div>
+                        
+                        <div class="grid md:grid-cols-3 gap-4 mb-8">
+                            <div class="bg-blue-50 p-6 rounded-xl text-center">
+                                <div class="text-3xl mb-2">💡</div>
+                                <h3 class="font-bold text-blue-900">CLAIM</h3>
+                                <p class="text-sm text-blue-800">What you're proving</p>
+                            </div>
+                            <div class="bg-green-50 p-6 rounded-xl text-center">
+                                <div class="text-3xl mb-2">📊</div>
+                                <h3 class="font-bold text-green-900">EVIDENCE</h3>
+                                <p class="text-sm text-green-800">The receipts (data)</p>
+                            </div>
+                            <div class="bg-orange-50 p-6 rounded-xl text-center">
+                                <div class="text-3xl mb-2">🧠</div>
+                                <h3 class="font-bold text-orange-900">REASONING</h3>
+                                <p class="text-sm text-orange-800">Why it proves it</p>
+                            </div>
+                        </div>
+                        
+                        <input 
+                            type="text" 
+                            id="nameInput"
+                            placeholder="What's your name?"
+                            class="w-full px-6 py-4 text-lg border-2 border-gray-300 rounded-xl mb-4 focus:border-purple-500 focus:outline-none"
+                        />
+                        
+                        <button 
+                            onclick="startApp()"
+                            class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-xl py-4 rounded-xl hover:shadow-xl transition-all"
+                        >
+                            Let's Go 🚀
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPick() {
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-purple-100 to-pink-100 p-4 md:p-8">
+                    <div class="max-w-6xl mx-auto">
+                        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                            <h2 class="text-3xl font-bold mb-2">Hey ${state.name}! Pick Your Controversy 🎯</h2>
+                            <p class="text-gray-600">Choose something you actually care about</p>
+                        </div>
+                        
+                        <div class="grid md:grid-cols-3 gap-6 mb-8">
+                            ${controversies.map((c, i) => `
+                                <div onclick="pickControversy(${i})" class="bg-white rounded-2xl shadow-lg p-6 cursor-pointer hover:shadow-2xl transition-all ${state.controversy === i ? 'ring-4 ring-purple-500' : ''}">
+                                    <h3 class="text-2xl font-bold mb-2">${c.title}</h3>
+                                    <p class="text-purple-600 font-semibold mb-3">${c.subtitle}</p>
+                                    <p class="text-gray-700">${c.hook}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="text-center">
+                            <button 
+                                onclick="nextStep()"
+                                ${state.controversy === null ? 'disabled' : ''}
+                                class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl disabled:opacity-50"
+                            >
+                                Continue →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderBadExample() {
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-blue-100 to-purple-100 p-4 md:p-8">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                            <h2 class="text-3xl font-bold mb-2">🕵️ First: Spot the Bad Stuff</h2>
+                            <p class="text-gray-600">Before you write yours, see what NOT to do</p>
+                        </div>
+                        
+                        <div class="bg-red-50 border-4 border-red-300 rounded-2xl p-6 mb-6">
+                            <div class="mb-4">
+                                <span class="bg-red-200 text-red-900 px-3 py-1 rounded-full text-sm font-bold">CLAIM</span>
+                                <p class="mt-2 text-lg">${badExample.claim}</p>
+                            </div>
+                            <div class="mb-4">
+                                <span class="bg-red-200 text-red-900 px-3 py-1 rounded-full text-sm font-bold">EVIDENCE</span>
+                                <p class="mt-2 text-lg">${badExample.evidence}</p>
+                            </div>
+                            <div>
+                                <span class="bg-red-200 text-red-900 px-3 py-1 rounded-full text-sm font-bold">REASONING</span>
+                                <p class="mt-2 text-lg">${badExample.reasoning}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                            <h3 class="text-xl font-bold mb-4">What's Wrong? 🤔</h3>
+                            ${badExample.problems.map(p => `
+                                <div class="bg-gray-100 p-4 rounded-lg mb-2">
+                                    <p>❌ ${p}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="bg-green-50 border-4 border-green-300 rounded-2xl p-6 mb-6">
+                            <h3 class="text-xl font-bold text-green-900 mb-4">✨ Now a GOOD Example:</h3>
+                            <div class="mb-4">
+                                <span class="bg-green-200 text-green-900 px-3 py-1 rounded-full text-sm font-bold">CLAIM</span>
+                                <p class="mt-2 text-lg">${goodExample.claim}</p>
+                            </div>
+                            <div class="mb-4">
+                                <span class="bg-green-200 text-green-900 px-3 py-1 rounded-full text-sm font-bold">EVIDENCE</span>
+                                <p class="mt-2 text-lg">${goodExample.evidence}</p>
+                            </div>
+                            <div>
+                                <span class="bg-green-200 text-green-900 px-3 py-1 rounded-full text-sm font-bold">REASONING</span>
+                                <p class="mt-2 text-lg">${goodExample.reasoning}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button onclick="nextStep()" class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl">
+                                Got It, Let's Build Mine →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderSift() {
+            const c = controversies[state.controversy];
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-yellow-100 to-orange-100 p-4 md:p-8">
+                    <div class="max-w-5xl mx-auto">
+                        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                            <h2 class="text-3xl font-bold mb-2">🔍 SIFT: Spot the Fake Stuff</h2>
+                            <p class="text-gray-600 mb-4">Rate these sources - which can you trust?</p>
+                            <p class="font-bold text-purple-900">Question: ${c.question}</p>
+                        </div>
+                        
+                        <div class="grid md:grid-cols-4 gap-4 mb-8">
+                            <div class="bg-red-50 p-4 rounded-xl"><strong>🛑 STOP</strong><br/><span class="text-sm">Don't trust yet</span></div>
+                            <div class="bg-blue-50 p-4 rounded-xl"><strong>🔎 INVESTIGATE</strong><br/><span class="text-sm">Who made this?</span></div>
+                            <div class="bg-green-50 p-4 rounded-xl"><strong>📚 FIND BETTER</strong><br/><span class="text-sm">Better sources?</span></div>
+                            <div class="bg-purple-50 p-4 rounded-xl"><strong>🔗 TRACE</strong><br/><span class="text-sm">Find original</span></div>
+                        </div>
+                        
+                        ${c.sources.map((s, i) => `
+                            <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
+                                <h3 class="text-xl font-bold mb-2">${s.name}</h3>
+                                <p class="text-sm text-gray-600 mb-3">Type: ${s.type}</p>
+                                <p class="mb-4">${s.why}</p>
+                                <select onchange="rateSift(${i}, this.value)" class="w-full p-3 border-2 rounded-lg">
+                                    <option value="">Rate this source...</option>
+                                    <option value="5">⭐⭐⭐⭐⭐ Highly Trustworthy</option>
+                                    <option value="3">⭐⭐⭐ Use with Caution</option>
+                                    <option value="1">⭐ Don't Use This</option>
+                                </select>
+                            </div>
+                        `).join('')}
+                        
+                        <div class="text-center">
+                            <button 
+                                onclick="nextStep()"
+                                ${Object.keys(state.sift).length < 3 ? 'disabled' : ''}
+                                class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl disabled:opacity-50"
+                            >
+                                Continue →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderClaim() {
+            const c = controversies[state.controversy];
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-blue-100 to-purple-100 p-4 md:p-8">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                            <h2 class="text-3xl font-bold mb-2">💡 Build Your Claim</h2>
+                            <p class="text-gray-600">Answer the question specifically and clearly</p>
+                        </div>
+                        
+                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg mb-6">
+                            <p class="font-bold">Research Question:</p>
+                            <p>${c.question}</p>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                            <h3 class="font-bold mb-3">✅ Good Claim Checklist:</h3>
+                            <div class="space-y-2">
+                                <p>✓ Directly answers the question</p>
+                                <p>✓ Specific (numbers, names, details)</p>
+                                <p>✓ Can prove with evidence</p>
+                                <p>✓ Sounds confident</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                            <label class="block font-bold mb-3">Write Your Claim:</label>
+                            <textarea 
+                                id="claimInput"
+                                rows="4"
+                                placeholder="Example: TikTok health advice should not be trusted because..."
+                                class="w-full p-4 border-2 rounded-lg"
+                                oninput="updateClaim()"
+                            >${state.claim}</textarea>
+                            <p class="text-sm text-gray-600 mt-2">${state.claim.length} characters ${state.claim.length > 50 ? '✓' : '- keep going!'}</p>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button 
+                                onclick="nextStep()"
+                                ${state.claim.length < 50 ? 'disabled' : ''}
+                                class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl disabled:opacity-50"
+                            >
+                                Continue →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderEvidence() {
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-green-100 to-blue-100 p-4 md:p-8">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                            <h2 class="text-3xl font-bold mb-2">📊 Gather Evidence</h2>
+                            <p class="text-gray-600">Use data from trusted sources</p>
+                        </div>
+                        
+                        <div class="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-lg mb-6">
+                            <p class="font-bold">Your Claim:</p>
+                            <p>${state.claim}</p>
+                        </div>
+                        
+                        ${[0, 1, 2].map(i => `
+                            <div class="bg-white rounded-2xl shadow-lg p-6 mb-4">
+                                <label class="block font-bold mb-3">Evidence #${i + 1} ${i === 0 ? '(Required)' : '(Optional)'}</label>
+                                <textarea 
+                                    id="ev${i}"
+                                    rows="3"
+                                    placeholder="According to [source], [specific data]..."
+                                    class="w-full p-4 border-2 rounded-lg"
+                                    oninput="updateEvidence(${i})"
+                                >${state.evidence[i]}</textarea>
+                            </div>
+                        `).join('')}
+                        
+                        <div class="text-center">
+                            <button 
+                                onclick="nextStep()"
+                                ${state.evidence[0].length < 30 ? 'disabled' : ''}
+                                class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl disabled:opacity-50"
+                            >
+                                Continue →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderReasoning() {
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-orange-100 to-pink-100 p-4 md:p-8">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                            <h2 class="text-3xl font-bold mb-2">🧠 Explain Your Reasoning</h2>
+                            <p class="text-gray-600">WHY does your evidence prove your claim?</p>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                            <p class="font-bold mb-2">Your Claim:</p>
+                            <p class="mb-4">${state.claim}</p>
+                            <p class="font-bold mb-2">Your Evidence:</p>
+                            ${state.evidence.filter(e => e).map(e => `<p class="mb-2">• ${e}</p>`).join('')}
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                            <label class="block font-bold mb-3">Write Your Reasoning:</label>
+                            <textarea 
+                                id="reasoningInput"
+                                rows="6"
+                                placeholder="This evidence supports my claim because... When [X] happens, it causes [Y]..."
+                                class="w-full p-4 border-2 rounded-lg"
+                                oninput="updateReasoning()"
+                            >${state.reasoning}</textarea>
+                            <p class="text-sm text-gray-600 mt-2">${state.reasoning.length} characters ${state.reasoning.length > 100 ? '✓' : '- explain the science!'}</p>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button 
+                                onclick="nextStep()"
+                                ${state.reasoning.length < 100 ? 'disabled' : ''}
+                                class="bg-purple-600 text-white font-bold text-xl py-4 px-12 rounded-xl disabled:opacity-50"
+                            >
+                                Review My CER →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderReview() {
+            const score = calcScore();
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 p-4 md:p-8">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                            <h2 class="text-3xl font-bold mb-2">🎯 Your Complete CER</h2>
+                            <p class="text-gray-600">Review before submitting</p>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                            <div class="mb-6 pb-6 border-b-2">
+                                <span class="bg-blue-200 text-blue-900 px-3 py-1 rounded-full text-sm font-bold">CLAIM</span>
+                                <p class="mt-3">${state.claim}</p>
+                            </div>
+                            <div class="mb-6 pb-6 border-b-2">
+                                <span class="bg-green-200 text-green-900 px-3 py-1 rounded-full text-sm font-bold">EVIDENCE</span>
+                                ${state.evidence.filter(e => e).map(e => `<p class="mt-3">• ${e}</p>`).join('')}
+                            </div>
+                            <div>
+                                <span class="bg-orange-200 text-orange-900 px-3 py-1 rounded-full text-sm font-bold">REASONING</span>
+                                <p class="mt-3">${state.reasoning}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6">
+                            <h3 class="font-bold text-xl mb-4">Score: ${score}/12</h3>
+                            <div class="${score >= 9 ? 'bg-green-100' : score >= 6 ? 'bg-yellow-100' : 'bg-red-100'} p-4 rounded-lg">
+                                <p class="font-bold">${score >= 9 ? '🌟 Advanced!' : score >= 6 ? '✓ Proficient' : '⚠️ Needs Work'}</p>
+                                <p class="text-sm mt-2">${score >= 9 ? 'Excellent work!' : score >= 6 ? 'Good job! Could be stronger.' : 'Try being more specific.'}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <button onclick="state.step = 4; render();" class="bg-gray-600 text-white font-bold py-4 rounded-xl">← Revise</button>
+                            <button onclick="nextStep()" class="bg-purple-600 text-white font-bold py-4 rounded-xl">Submit →</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDone() {
+            return `
+                <div class="min-h-screen bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full p-8">
+                        <div class="text-center mb-8">
+                            <div class="text-6xl mb-4">🎉</div>
+                            <h1 class="text-4xl font-bold mb-2">You Did It!</h1>
+                            <p class="text-xl text-gray-600">CER Detective Academy Complete</p>
+                        </div>
+                        
+                        <div class="bg-green-100 border-2 border-green-500 rounded-xl p-6 mb-6">
+                            <h3 class="font-bold text-green-900 mb-3">Skills Unlocked:</h3>
+                            <p>✓ Spot unreliable sources</p>
+                            <p>✓ Build scientific arguments</p>
+                            <p>✓ Explain reasoning</p>
+                            <p>✓ Think critically</p>
+                        </div>
+                        
+                        <button onclick="downloadPDF()" class="w-full bg-green-600 text-white font-bold text-xl py-4 rounded-xl mb-4">
+                            📄 Download Certificate
+                        </button>
+                        
+                        <a href="YOUR_QUIZ_URL" target="_blank" class="block w-full bg-purple-600 text-white font-bold text-xl py-4 rounded-xl text-center">
+                            📝 Take Quiz
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Functions
+        function startApp() {
+            const name = document.getElementById('nameInput').value.trim();
+            if (!name) { alert('Enter your name!'); return; }
+            state.name = name;
+            nextStep();
+        }
+
+        function nextStep() {
+            state.step++;
+            render();
+            window.scrollTo(0, 0);
+        }
+
+        function pickControversy(i) {
+            state.controversy = i;
+            render();
+        }
+
+        function rateSift(i, val) {
+            state.sift[i] = val;
+            render();
+        }
+
+        function updateClaim() {
+            state.claim = document.getElementById('claimInput').value;
+            render();
+        }
+
+        function updateEvidence(i) {
+            state.evidence[i] = document.getElementById('ev' + i).value;
+        }
+
+        function updateReasoning() {
+            state.reasoning = document.getElementById('reasoningInput').value;
+            render();
+        }
+
+        function calcScore() {
+            let score = 0;
+            if (state.claim.length > 100) score += 4;
+            else if (state.claim.length > 50) score += 3;
+            else score += 2;
+            
+            const evCount = state.evidence.filter(e => e.length > 30).length;
+            score += evCount >= 2 ? 4 : evCount >= 1 ? 3 : 2;
+            
+            if (state.reasoning.length > 150) score += 4;
+            else if (state.reasoning.length > 100) score += 3;
+            else score += 2;
+            
+            return score;
+        }
+
+        function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFillColor(102, 126, 234);
+            doc.rect(0, 0, 210, 40, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(24);
+            doc.text('CER DETECTIVE ACADEMY', 105, 20, { align: 'center' });
+            doc.setFontSize(14);
+            doc.text('Certificate of Completion', 105, 30, { align: 'center' });
+            
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(16);
+            doc.text(state.name, 105, 55, { align: 'center' });
+            
+            doc.setFontSize(11);
+            doc.text('CLAIM:', 20, 75);
+            const claim = doc.splitTextToSize(state.claim, 170);
+            doc.text(claim, 20, 82);
+            
+            let y = 82 + (claim.length * 6) + 10;
+            doc.text('EVIDENCE:', 20, y);
+            state.evidence.filter(e => e).forEach((ev, i) => {
+                const evText = doc.splitTextToSize(`${i + 1}. ${ev}`, 170);
+                doc.text(evText, 20, y + 7 + (i * 20));
+                y += evText.length * 6 + 20;
+            });
+            
+            if (y > 240) { doc.addPage(); y = 20; }
+            doc.text('REASONING:', 20, y);
+            const reasoning = doc.splitTextToSize(state.reasoning, 170);
+            doc.text(reasoning, 20, y + 7);
+            
+            y = y + 7 + (reasoning.length * 6) + 10;
+            if (y > 250) { doc.addPage(); y = 20; }
+            doc.text(`Score: ${calcScore()}/12`, 20, y);
+            
+            doc.save(`${state.name.replace(/\s+/g, '_')}_CER_Certificate.pdf`);
+        }
+
+        // Start
+        render();
+    </script>
+</body>
+</html>
